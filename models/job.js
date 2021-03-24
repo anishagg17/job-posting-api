@@ -1,4 +1,3 @@
-
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
@@ -39,4 +38,5 @@ const JobSchema = new Schema({
   }
 });
 
-module.exports = Job = mongoose.model('job', JobSchema);
+const Job = mongoose.model('job', JobSchema);
+module.exports = Job;
