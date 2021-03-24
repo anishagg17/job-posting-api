@@ -1,5 +1,5 @@
 const express = require('express');
-const Recruiter = require('../../models/Recruiter');
+const Recruiter = require('../../models/recruiter');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const router = express.Router();
