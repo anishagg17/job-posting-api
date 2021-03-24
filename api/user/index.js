@@ -117,7 +117,7 @@ router.get('/my_apps', middleware, async (req, res) => {
   try {
     console.log(req.user);
     const user = await User.findById(req.user.id).populate('applications');
-    console.log(user);
+    // console.log(user);
     res.json(user);
   } catch (err) {
     console.error(err);
@@ -125,6 +125,39 @@ router.get('/my_apps', middleware, async (req, res) => {
       msg: 'error in user-auth api'
     });
   }
+});
+
+// Delete a job application. I created it this way so that if a user get's rejected he doesn't delete and reapply
+router.post('/delete/:id', middleware, async (req, res) => {
+  //   console.log(req.body);
+    try {
+      const user = await User.findById(req.user.id).select('-password');
+      if(!user) res.status(401).json({
+        msg: 'user not logged in'
+      });
+      
+      const job = await Job.findById(req.params.id);
+      if(!job)   res.status(401).json({
+        msg: 'job does not exist'
+      });
+
+      if (
+        job.applicants.filter(app => app.user.toString() === req.user.id).length == 0
+      ) {
+        return res.status(400).json({ msg: 'Job not applied' });
+      }
+  
+      job.applicants=job.applicants.map(app => {
+        if(app.user.toString() === req.user.id) app.status='deleted';
+        return app;
+      });
+      await job.save();
+      res.status(200).json({
+        msg: 'Job deleted successfully'
+      }); 
+    } catch (err) {
+      res.status(400).end(err.errmsg);
+    }
 });
 
 module.exports = router;
