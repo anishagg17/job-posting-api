@@ -1,5 +1,6 @@
 const express = require('express');
 const User = require('../../models/user');
+const Job = require('../../models/job');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const router = express.Router();
@@ -47,14 +48,18 @@ router.post('/signUp', async (req, res) => {
 
 //Authenticate User
 router.post('/logIn', async (req, res) => {
-  // console.log("auth rec");
   try {
     const { email, password } = req.body;
+  // console.log("auth rec");
+
     const user = await User.findOne({ email });
+    // console.log("auth user",user);
+
     if (!user) {
       return res.status(400).json({ errmsg: 'Invalid Credentials' });
     }
-    const valid = await bcrypt.compare(password, User.password);
+    const valid = await bcrypt.compare(password, user.password);
+    // console.log("auth valid");
 
     if (!valid) {
       return res.status(400).json({ errmsg: 'Invalid Credentials' });
@@ -80,17 +85,20 @@ router.post('/logIn', async (req, res) => {
 
 //Apply to a Job
 router.post('/apply/:id', middleware, async (req, res) => {
-  //   console.log(req.body);
+    // console.log('req',req.body,req.user,req.params);
     try {
       const user = await User.findById(req.user.id).select('-password');
-      if(!user) res.status(401).json({
+      if(!user) return res.status(401).json({
         msg: 'user not logged in'
       });
-      
+      // console.log(user);
+
       const job = await Job.findById(req.params.id);
-      if(!job)   res.status(401).json({
+      console.log("job",job);
+      if(!job)   return res.status(401).json({
         msg: 'job does not exist'
       });
+      // console.log("job",job);
 
       if (
         job.applicants.filter(app => app.user.toString() === req.user.id).length > 0
@@ -132,12 +140,12 @@ router.post('/delete/:id', middleware, async (req, res) => {
   //   console.log(req.body);
     try {
       const user = await User.findById(req.user.id).select('-password');
-      if(!user) res.status(401).json({
+      if(!user) return res.status(401).json({
         msg: 'user not logged in'
       });
       
       const job = await Job.findById(req.params.id);
-      if(!job)   res.status(401).json({
+      if(!job)  return res.status(401).json({
         msg: 'job does not exist'
       });
 
@@ -152,11 +160,11 @@ router.post('/delete/:id', middleware, async (req, res) => {
         return app;
       });
       await job.save();
-      res.status(200).json({
+      return res.status(200).json({
         msg: 'Job deleted successfully'
       }); 
     } catch (err) {
-      res.status(400).end(err.errmsg);
+      return res.status(400).end(err.errmsg);
     }
 });
 

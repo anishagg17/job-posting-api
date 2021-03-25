@@ -13,7 +13,7 @@ router.post('/create', recruiterMiddleware, async (req, res) => {
     try {
       const recruiter = await Recruiter.findById(req.recruiter.id).select('-password');
 
-      if(!recruiter)  res.status(401).json({
+      if(!recruiter)  return res.status(401).json({
         msg: 'recruiter not logged in'
       });
 
@@ -39,7 +39,7 @@ router.get('/:id', recruiterMiddleware, async (req, res) => {
     try {
       const job = await Job.findById(req.params.id);
 
-      if(job.recruiter!=req.recruiter.id)   res.status(401).json({
+      if(job.recruiter!=req.recruiter.id)   return res.status(401).json({
         msg: 'you are not the recruiter for this job'
       });
 
@@ -63,6 +63,101 @@ router.get('/', async (req, res) => {
         msg: 'server error'
       });
     }
+});
+
+//Accept a candidate.
+router.post('/accept/:id', recruiterMiddleware, async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.id);
+
+    if(!job)   return res.status(401).json({
+      msg: 'Job not found'
+    });
+
+    if(job.status=='closed')  return res.status(401).json({
+      msg: 'Job already closed'
+    });
+
+    if(job.recruiter!=req.recruiter.id)   return res.status(401).json({
+      msg: 'You are not the recruiter for this job'
+    });
+
+    // console.log(req);
+    for(let idx=0;idx<job.applicants.length;idx++){
+      if(job.applicants[idx].user==req.body.user){
+        if(job.applicants[idx].status!='application submitted'){
+          return res.status(401).json({
+            msg: "User application is not under consideration"
+          });
+        }
+
+        job.applicants[idx].status='selected';
+        job.status='closed';
+        job.save();
+
+        // console.log("u",job.applicants[idx]);
+        return res.status(200).json({
+          msg: "User accepted for this application"
+        });
+      }
+    }
+
+    res.status(401).json({
+      msg: "User didn't apply or deleted his application"
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(401).json({
+      msg: 'server error'
+    });
+  }
+});
+
+//Reject a candidate.
+router.post('/reject/:id', recruiterMiddleware, async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.id);
+
+    if(!job)   return res.status(401).json({
+      msg: 'Job not found'
+    });
+
+    if(job.status=='closed')  return res.status(401).json({
+      msg: 'Job already closed'
+    });
+
+    if(job.recruiter!=req.recruiter.id)   return res.status(401).json({
+      msg: 'You are not the recruiter for this job'
+    });
+
+    // console.log(req);
+    for(let idx=0;idx<job.applicants.length;idx++){
+      if(job.applicants[idx].user==req.body.user){
+        if(job.applicants[idx].status!='application submitted'){
+          return res.status(401).json({
+            msg: "User application is not under consideration"
+          });
+        }
+
+        job.applicants[idx].status='rejected';
+        job.save();
+
+        // console.log("u",job.applicants[idx]);
+        return res.status(200).json({
+          msg: "User rejected for this application"
+        });
+      }
+    }
+
+    res.status(401).json({
+      msg: "User didn't apply or deleted his application"
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(401).json({
+      msg: 'server error'
+    });
+  }
 });
 
 
